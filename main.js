@@ -32,14 +32,17 @@ const image_dictionary = {
 };
 
 const text_dictionary = {
-  "genesis 2019": "Be precious be proud be a cyan",
+  "genesis 2019": "Be precious, be proud, to be a cyan",
   "siapa kita?": "CYAN CYAN CYAN",
+  "prodase?": "Fast, smart, efficient",
   "untuk apa kita disini?": "Bersenang Senang",
   "anda yakin lulus?": "Yakin yakin yakin",
   "we love you cyan": "we do!",
   "sistem informasi": "Satu hati selalu di depan",
   "bpad laboratory club": "One step forward",
-  erp: "Be safe, be resourceful, be respectful, and be responsible"
+  "praktikum erp": "Be safe, be resourceful, be respectful, and be responsible",
+  si4203: "Uhuy",
+  "erp lab": "SI"
 };
 
 const client = new line.Client(config);
@@ -71,17 +74,13 @@ const handleEvent = evt => {
     case "message":
       if (evt.message.type == "text") {
         console.log(evt.message.text);
-        if (
-          evt.source.type == "user" &&
-          image_dictionary[evt.message.text.toLowerCase()]
-        ) {
+        if (evt.source.type == "user" && image_dictionary[evt.message.text]) {
           if (userId == evt.source.userId) {
             return client.getProfile(evt.source.userId).then(profile =>
               client.pushMessage(groupId, {
                 type: "image",
                 // text: profile.displayName,
-                originalContentUrl:
-                  image_dictionary[evt.message.text.toLowerCase()],
+                originalContentUrl: image_dictionary[evt.message.text],
                 previewImageUrl: image_dictionary[evt.message.text]
               })
             );
@@ -112,7 +111,7 @@ const handleEvent = evt => {
 
 app.get("*", (req, res) => {
   res.status(200).end();
-})
+});
 
 app.listen(PORT, () => {
   console.log(`Listening on port: ${PORT}`);
