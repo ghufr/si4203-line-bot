@@ -5,6 +5,8 @@ const line = require("@line/bot-sdk");
 const mongoose = require("mongoose");
 
 const { image_dictionary, text_dictionary } = require("./dict");
+const { authenticateUser, authenticateGroup } = require("./utils/auth");
+const { textDictionary, imageDictionary } = require("./utils/dictionary");
 const constants = require("./constants");
 
 const app = express();
@@ -22,11 +24,15 @@ const lineConfig = {
 
 const client = new line.Client(lineConfig);
 
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true });
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
 const db = mongoose.connection;
 
 db.on("error", console.error.bind(console, "connection error:"));
+db.on("open", console.log.bind(console, "Connected to mongodb"));
 
 app.post("/webhook", line.middleware(lineConfig), (req, res) => {
   if (req.body.events) {
@@ -47,8 +53,35 @@ const replyText = (token, texts) => {
   );
 };
 
+const replyImage = (token, url) => {
+  return client.replyMessage(token, {
+    type: "image",
+    originalContentUrl: url,
+    previewImageUrl: url
+  });
+};
+
 const handleText = evt => {
-  // TODO: Handle Text Message
+  switch (evt.source.type) {
+    case "user":
+      return authenticateUser(evt.source.userId).then(res => {
+        if (res) {
+          return imageDictionary(evt.message.text).then(res_2 => {
+            client.pushMessage(groupId, {
+              type: "image",
+              originalContentUrl: image_dictionary[evt.message.text],
+              previewImageUrl: image_dictionary[evt.message.text]
+            });
+          });
+        }
+      });
+    case "group":
+      return authenticateGroup(evt.source.groupId).then(res => {
+        if (res) {
+          return textDictionary(evt.message.text);
+        }
+      });
+  }
   if (evt.source.type == "user" && image_dictionary[evt.message.text]) {
     if (userId == evt.source.userId) {
       return client.getProfile(evt.source.userId).then(profile =>
@@ -84,9 +117,12 @@ const handleEvent = evt => {
   switch (evt.type) {
     case "message":
       switch (evt.message.type) {
-        case "text": {
-          return null;
-        }
+        case "text":
+          return handleText(evt);
+        case "image":
+          return handleImage(evt);
+        case "sticker":
+          return handleSticker(evt);
         default:
           return null;
       }

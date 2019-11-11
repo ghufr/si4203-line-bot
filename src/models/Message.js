@@ -14,10 +14,13 @@ const Message = mongoose.Schema({
     type: String,
     enum: ["text", "image", "sticker", "video", "audio", "location"]
   },
+  name: String,
   content: {
     type: Object,
     enum: [ImageDict, TextDict]
-  }
+  },
+  limit: [String],
+  rude: Boolean
 });
 
 module.exports = mongoose.model("Message", Message);
